@@ -9,7 +9,7 @@ import Map from "./components/Map";
 import { analyzeQuery, fetchActiveEvents } from "./services/gemini";
 import { SearchResult, MapLayer } from "./types";
 import { motion, AnimatePresence } from "motion/react";
-import { Globe, Layers, Info, X, Check, Activity } from "lucide-react";
+import { Globe, Layers, Info, X, Check, Activity, MapPin } from "lucide-react";
 
 const INITIAL_LAYERS: MapLayer[] = [
   {
@@ -62,6 +62,9 @@ export default function App() {
   const [layers, setLayers] = useState<MapLayer[]>(INITIAL_LAYERS);
   const [showLayerPanel, setShowLayerPanel] = useState(false);
   const [activeEvents, setActiveEvents] = useState<any[]>([]);
+  const [projection, setProjection] = useState<'globe' | 'mercator'>('globe');
+  const [showStreetView, setShowStreetView] = useState(false);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([0, 20]);
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -104,8 +107,10 @@ export default function App() {
       <main className="absolute inset-0 z-0">
         <Map 
           activeLayers={layers.filter(l => l.visible)} 
+          projection={projection}
           targetLocation={results?.location}
           activeEvents={activeEvents}
+          onMove={(center) => setMapCenter(center)}
         />
       </main>
 
@@ -185,8 +190,22 @@ export default function App() {
             >
               <Layers className="w-5 h-5" />
             </button>
-            <button className="p-2 hover:bg-white/10 rounded transition-colors text-white/60 hover:text-white">
+            <button 
+              onClick={() => setProjection(prev => prev === 'globe' ? 'mercator' : 'globe')}
+              className={cn(
+                "p-2 rounded transition-colors",
+                projection === 'globe' ? "bg-blue-600 text-white" : "text-white/60 hover:text-white hover:bg-white/10"
+              )}
+              title={projection === 'globe' ? "Switch to 2D View" : "Switch to Globe View"}
+            >
               <Globe className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setShowStreetView(true)}
+              className="p-2 hover:bg-white/10 rounded transition-colors text-white/60 hover:text-white"
+              title="Open Street View"
+            >
+              <MapPin className="w-5 h-5" />
             </button>
           </div>
 
@@ -225,8 +244,49 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-        {/* Data Status (Bottom Right) */}
-        <div className="absolute bottom-6 right-6 z-10">
+        {/* Street View Modal */}
+        <AnimatePresence>
+          {showStreetView && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="absolute inset-0 z-50 flex items-center justify-center p-4 md:p-12 bg-black/60 backdrop-blur-md"
+            >
+              <div className="relative w-full h-full max-w-5xl bg-[#1A1A1A] rounded-2xl overflow-hidden border border-white/10 shadow-2xl flex flex-col">
+                <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#1A1A1A]">
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-5 h-5 text-blue-400" />
+                    <h3 className="text-sm font-semibold text-white">Ground Level Observation (Street View)</h3>
+                  </div>
+                  <button 
+                    onClick={() => setShowStreetView(false)}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex-1 bg-black">
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps/embed/v1/streetview?key=${process.env.GOOGLE_MAPS_API_KEY}&location=${results?.location?.lat || mapCenter[1]},${results?.location?.lng || mapCenter[0]}&heading=0&pitch=0&fov=90`}
+                  />
+                </div>
+                <div className="p-3 bg-[#1A1A1A] border-t border-white/10 text-[10px] text-white/30 font-mono text-center uppercase tracking-widest">
+                  Powered by Google Maps Platform
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Data Status (Bottom Right - Shifted up to avoid Mapbox controls) */}
+        <div className="absolute bottom-24 right-6 z-10">
           <div className="bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full flex items-center gap-3">
             <div className="flex -space-x-2">
               {[1, 2, 3].map((i) => (

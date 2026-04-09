@@ -11,15 +11,17 @@ interface MapProps {
   center?: [number, number];
   zoom?: number;
   activeLayers: MapLayer[];
+  projection?: 'globe' | 'mercator';
   targetLocation?: {
     lat: number;
     lng: number;
     zoom?: number;
   };
   activeEvents?: any[];
+  onMove?: (center: [number, number]) => void;
 }
 
-export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, targetLocation, activeEvents = [] }: MapProps) {
+export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projection = 'globe', targetLocation, activeEvents = [], onMove }: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
@@ -49,12 +51,20 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, target
         style: 'mapbox://styles/mapbox/satellite-streets-v12',
         center: center,
         zoom: zoom,
-        projection: 'globe',
+        projection: projection,
         antialias: true
       });
 
       map.current.on('load', () => {
         setIsLoaded(true);
+        // Enable terrain for better 3D effect like Google Earth
+        map.current?.addSource('mapbox-dem', {
+          'type': 'raster-dem',
+          'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+          'tileSize': 512,
+          'maxzoom': 14
+        });
+        map.current?.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
       });
 
       map.current.on('idle', () => {
@@ -64,6 +74,13 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, target
       map.current.on('error', (e) => {
         if (e.error?.message?.includes('invalid Mapbox access token')) {
           setError("Invalid Mapbox access token. Please check your VITE_MAPBOX_TOKEN.");
+        }
+      });
+
+      map.current.on('moveend', () => {
+        if (map.current && onMove) {
+          const center = map.current.getCenter();
+          onMove([center.lng, center.lat]);
         }
       });
 
@@ -77,7 +94,7 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, target
         });
       });
 
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
     } catch (e) {
       console.error("Mapbox initialization failed:", e);
       setError("Failed to initialize Mapbox.");
@@ -88,6 +105,12 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, target
       map.current = null;
     };
   }, []);
+
+  // Handle Projection Changes
+  useEffect(() => {
+    if (!map.current || !isLoaded) return;
+    map.current.setProjection(projection);
+  }, [projection, isLoaded]);
 
   // Handle Target Location Changes
   useEffect(() => {
@@ -122,6 +145,15 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, target
     eventMarkers.current = [];
 
     activeEvents.forEach(event => {
+      const category = event.categories?.[0]?.title || '';
+      const isWildfire = category.toLowerCase().includes('wildfire') || category.toLowerCase().includes('fire');
+      
+      // If it's a wildfire event, only show if wildfire layer is active
+      if (isWildfire) {
+        const wildfireLayerActive = activeLayers.some(l => l.id === 'wildfire');
+        if (!wildfireLayerActive) return;
+      }
+
       const geometry = event.geometry?.[0];
       if (!geometry || geometry.type !== 'Point') return;
 
@@ -147,7 +179,7 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, target
       
       eventMarkers.current.push(m);
     });
-  }, [activeEvents, isLoaded]);
+  }, [activeEvents, isLoaded, activeLayers]);
 
   // Handle Layer Changes
   useEffect(() => {
