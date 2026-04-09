@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  --bg: #141414;
+  --ink: #E4E3E0;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Pulsing Marker */
+.pulsing-marker {
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+  position: relative;
+}
+
+.pulsing-marker::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  border: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  opacity: 0;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Event Marker */
+.event-marker {
+  width: 12px;
+  height: 12px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 2px solid white;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  transition: transform 0.2s;
+}
+
+.event-marker:hover {
+  transform: scale(1.5);
+  background: #f87171;
+}
+
+@keyframes shine {
+  0% { border-color: rgba(255, 255, 255, 0.1); box-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+  50% { border-color: rgba(255, 255, 255, 0.6); box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); }
+  100% { border-color: rgba(255, 255, 255, 0.1); box-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+.shiny-border {
+  animation: shine 3s infinite ease-in-out;
+}
+
+/* Mapbox overrides */
+.mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib {
+  display: none !important;
+}

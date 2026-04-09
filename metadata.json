@@ -1,0 +1,5 @@
+{
+  "name": "EarthLens AI",
+  "description": "Intelligent Earth Science Discovery Platform. Transform natural language queries into curated NASA dataset pipelines and visual previews.",
+  "requestFramePermissions": []
+}

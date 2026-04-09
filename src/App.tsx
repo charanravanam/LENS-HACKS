@@ -1,0 +1,245 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { useState, useEffect } from "react";
+import Sidebar from "./components/Sidebar";
+import Map from "./components/Map";
+import { analyzeQuery, fetchActiveEvents } from "./services/gemini";
+import { SearchResult, MapLayer } from "./types";
+import { motion, AnimatePresence } from "motion/react";
+import { Globe, Layers, Info, X, Check, Activity } from "lucide-react";
+
+const INITIAL_LAYERS: MapLayer[] = [
+  {
+    id: 'precipitation',
+    name: 'Precipitation (GPM)',
+    visible: false,
+    type: 'raster',
+    url: '/api/nasa/gibs/GPM_3IMERGHH_Precipitation_Amount/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png',
+    description: 'Global Precipitation Measurement (GPM) hourly precipitation amount.'
+  },
+  {
+    id: 'wildfire',
+    name: 'Wildfire Hotspots',
+    visible: false,
+    type: 'raster',
+    url: '/api/nasa/gibs/MODIS_Terra_Thermal_Anomalies_Day/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png',
+    description: 'Active fire detections from MODIS Terra satellite.'
+  },
+  {
+    id: 'vegetation',
+    name: 'Vegetation Index (NDVI)',
+    visible: false,
+    type: 'raster',
+    url: '/api/nasa/gibs/MODIS_Terra_L3_NDVI_Monthly/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png',
+    description: 'Normalized Difference Vegetation Index (NDVI) from MODIS.'
+  },
+  {
+    id: 'glacier-boundaries',
+    name: 'Glacier Boundaries',
+    visible: false,
+    type: 'geojson',
+    url: 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json', // Placeholder for glacier geojson
+    description: 'RGI Glacier boundaries for the Himalayan region.'
+  },
+  {
+    id: 'temp-anomalies',
+    name: 'Temperature Anomalies',
+    visible: false,
+    type: 'raster',
+    url: '/api/nasa/gibs/MODIS_Terra_L3_Land_Surface_Temp_8Day_Day/default/{TIME}/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png',
+    description: 'Land surface temperature anomalies.',
+    timeEnabled: true
+  }
+];
+
+export default function App() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [results, setResults] = useState<SearchResult | null>(null);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [layers, setLayers] = useState<MapLayer[]>(INITIAL_LAYERS);
+  const [showLayerPanel, setShowLayerPanel] = useState(false);
+  const [activeEvents, setActiveEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      const events = await fetchActiveEvents();
+      setActiveEvents(events);
+    };
+    loadEvents();
+  }, []);
+
+  const handleSearch = async (query: string) => {
+    setIsLoading(true);
+    setShowWelcome(false);
+    try {
+      const data = await analyzeQuery(query);
+      setResults(data);
+
+      // Auto-enable layers for Himalayan/Glacier searches
+      if (query.toLowerCase().includes('himalaya') || query.toLowerCase().includes('glacier')) {
+        setLayers(prev => prev.map(l => {
+          if (['glacier-boundaries', 'temp-anomalies'].includes(l.id)) {
+            return { ...l, visible: true };
+          }
+          return l;
+        }));
+      }
+    } catch (error) {
+      console.error("Search failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleLayer = (id: string) => {
+    setLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
+  };
+
+  return (
+    <div className="relative h-screen w-screen overflow-hidden bg-[#0A0A0A] font-sans">
+      {/* Main Map Area */}
+      <main className="absolute inset-0 z-0">
+        <Map 
+          activeLayers={layers.filter(l => l.visible)} 
+          targetLocation={results?.location}
+          activeEvents={activeEvents}
+        />
+      </main>
+
+      {/* Floating Sidebar / Search Bar (Top Left) */}
+      <div className="absolute top-6 left-6 z-30 pointer-events-auto">
+        <Sidebar 
+          onSearch={handleSearch} 
+          isLoading={isLoading} 
+          results={results} 
+        />
+      </div>
+
+      {/* Welcome Overlay */}
+        <AnimatePresence>
+          {showWelcome && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="absolute inset-0 z-20 flex items-center justify-center p-8 bg-black/40 backdrop-blur-sm"
+            >
+              <div className="max-w-2xl w-full bg-[#1A1A1A] border border-white/10 rounded-2xl p-10 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-blue-600" />
+                
+                <button 
+                  onClick={() => setShowWelcome(false)}
+                  className="absolute top-6 right-6 text-white/20 hover:text-white transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+
+                <div className="flex items-start gap-6">
+                  <div className="w-16 h-16 bg-blue-600/20 rounded-2xl flex items-center justify-center shrink-0 border border-blue-500/30">
+                    <Info className="w-8 h-8 text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold text-white mb-4 tracking-tight">Welcome to EarthLens AI</h2>
+                    <p className="text-white/60 leading-relaxed mb-8">
+                      The intelligent discovery platform for NASA Earth Science data. 
+                      Instead of searching through thousands of datasets manually, 
+                      simply describe the natural event you want to study.
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-6 mb-10">
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-mono text-blue-400 uppercase tracking-widest">Semantic Discovery</h4>
+                        <p className="text-xs text-white/40">Maps natural language to scientific environmental signals.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-mono text-blue-400 uppercase tracking-widest">Research Ready</h4>
+                        <p className="text-xs text-white/40">Generates analysis-ready pipelines and dataset previews.</p>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => setShowWelcome(false)}
+                      className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-[0_0_30px_rgba(37,99,235,0.2)]"
+                    >
+                      Start Exploring
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Floating Map Controls Overlay (Top Right) */}
+        <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-3">
+          <div className="bg-black/60 backdrop-blur-md border border-white/10 p-2 rounded-lg flex flex-col gap-2">
+            <button 
+              onClick={() => setShowLayerPanel(!showLayerPanel)}
+              className={cn(
+                "p-2 rounded transition-colors",
+                showLayerPanel ? "bg-blue-600 text-white" : "text-white/60 hover:text-white hover:bg-white/10"
+              )}
+            >
+              <Layers className="w-5 h-5" />
+            </button>
+            <button className="p-2 hover:bg-white/10 rounded transition-colors text-white/60 hover:text-white">
+              <Globe className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Layer Panel */}
+          <AnimatePresence>
+            {showLayerPanel && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="w-64 bg-black/80 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl"
+              >
+                <h3 className="text-[10px] font-mono text-white/40 uppercase tracking-widest mb-4">Observation Layers</h3>
+                <div className="space-y-2">
+                  {layers.map(layer => (
+                    <button
+                      key={layer.id}
+                      onClick={() => toggleLayer(layer.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left",
+                        layer.visible 
+                          ? "bg-blue-600/20 border-blue-500/50 text-white" 
+                          : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
+                      )}
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-xs font-medium">{layer.name}</span>
+                        <span className="text-[9px] opacity-60 line-clamp-1">{layer.description}</span>
+                      </div>
+                      {layer.visible && <Check className="w-4 h-4 text-blue-400" />}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Data Status (Bottom Right) */}
+        <div className="absolute bottom-6 right-6 z-10">
+          <div className="bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full flex items-center gap-3">
+            <div className="flex -space-x-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="w-6 h-6 rounded-full border-2 border-[#141414] bg-blue-500/20 flex items-center justify-center overflow-hidden">
+                  <img src={`https://picsum.photos/seed/nasa${i}/24/24`} alt="Source" className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" />
+                </div>
+              ))}
+            </div>
+            <span className="text-[10px] font-mono text-white/60 uppercase tracking-widest">6,000+ NASA Datasets Indexed</span>
+          </div>
+        </div>
+    </div>
+  );
+}
+
+import { cn } from "./lib/utils";
