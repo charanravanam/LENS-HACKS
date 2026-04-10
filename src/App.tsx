@@ -9,7 +9,7 @@ import Map from "./components/Map";
 import { analyzeQuery, fetchActiveEvents } from "./services/gemini";
 import { SearchResult, MapLayer } from "./types";
 import { motion, AnimatePresence } from "motion/react";
-import { Globe, Layers, Info, X, Check, Activity, MapPin } from "lucide-react";
+import { Globe, Info, X, Check, Activity, MapPin } from "lucide-react";
 
 const INITIAL_LAYERS: MapLayer[] = [
   {
@@ -60,7 +60,6 @@ export default function App() {
   const [results, setResults] = useState<SearchResult | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [layers, setLayers] = useState<MapLayer[]>(INITIAL_LAYERS);
-  const [showLayerPanel, setShowLayerPanel] = useState(false);
   const [activeEvents, setActiveEvents] = useState<any[]>([]);
   const [projection, setProjection] = useState<'globe' | 'mercator'>('globe');
   const [showStreetView, setShowStreetView] = useState(false);
@@ -77,8 +76,18 @@ export default function App() {
   const handleSearch = async (query: string) => {
     setIsLoading(true);
     setShowWelcome(false);
+    setResults(null); 
+    
     try {
-      const data = await analyzeQuery(query);
+      const data = await analyzeQuery(query, (chunk) => {
+        setResults(prev => ({
+          ...prev,
+          explanation: (prev?.explanation || "") + chunk,
+          datasets: prev?.datasets || [],
+          suggestedVariables: prev?.suggestedVariables || []
+        } as SearchResult));
+      });
+      
       setResults(data);
 
       // Auto-enable layers for Himalayan/Glacier searches
@@ -182,15 +191,6 @@ export default function App() {
         <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-3">
           <div className="bg-black/60 backdrop-blur-md border border-white/10 p-2 rounded-lg flex flex-col gap-2">
             <button 
-              onClick={() => setShowLayerPanel(!showLayerPanel)}
-              className={cn(
-                "p-2 rounded transition-colors",
-                showLayerPanel ? "bg-blue-600 text-white" : "text-white/60 hover:text-white hover:bg-white/10"
-              )}
-            >
-              <Layers className="w-5 h-5" />
-            </button>
-            <button 
               onClick={() => setProjection(prev => prev === 'globe' ? 'mercator' : 'globe')}
               className={cn(
                 "p-2 rounded transition-colors",
@@ -208,40 +208,6 @@ export default function App() {
               <MapPin className="w-5 h-5" />
             </button>
           </div>
-
-          {/* Layer Panel */}
-          <AnimatePresence>
-            {showLayerPanel && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="w-64 bg-black/80 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl"
-              >
-                <h3 className="text-[10px] font-mono text-white/40 uppercase tracking-widest mb-4">Observation Layers</h3>
-                <div className="space-y-2">
-                  {layers.map(layer => (
-                    <button
-                      key={layer.id}
-                      onClick={() => toggleLayer(layer.id)}
-                      className={cn(
-                        "w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left",
-                        layer.visible 
-                          ? "bg-blue-600/20 border-blue-500/50 text-white" 
-                          : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
-                      )}
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-xs font-medium">{layer.name}</span>
-                        <span className="text-[9px] opacity-60 line-clamp-1">{layer.description}</span>
-                      </div>
-                      {layer.visible && <Check className="w-4 h-4 text-blue-400" />}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* Street View Modal */}
