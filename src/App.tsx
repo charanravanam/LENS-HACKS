@@ -76,18 +76,8 @@ export default function App() {
   const handleSearch = async (query: string) => {
     setIsLoading(true);
     setShowWelcome(false);
-    setResults(null); 
-    
     try {
-      const data = await analyzeQuery(query, (chunk) => {
-        setResults(prev => ({
-          ...prev,
-          explanation: (prev?.explanation || "") + chunk,
-          datasets: prev?.datasets || [],
-          suggestedVariables: prev?.suggestedVariables || []
-        } as SearchResult));
-      });
-      
+      const data = await analyzeQuery(query);
       setResults(data);
 
       // Auto-enable layers for Himalayan/Glacier searches
