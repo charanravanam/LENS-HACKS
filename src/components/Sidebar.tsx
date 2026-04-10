@@ -197,13 +197,6 @@ export default function Sidebar({ onSearch, isLoading, results }: SidebarProps) 
                         GENERATE
                       </button>
                     </div>
-                    <div className="flex items-center justify-between p-2.5 bg-black/40 rounded-lg border border-white/5">
-                      <div className="flex items-center gap-3">
-                        <Layers className="w-3.5 h-3.5 text-white/40" />
-                        <span className="text-xs text-white/80">API Endpoints</span>
-                      </div>
-                      <button className="text-[9px] font-mono text-blue-400 hover:text-blue-300">COPY</button>
-                    </div>
                   </div>
                 </section>
               </div>

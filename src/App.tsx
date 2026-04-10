@@ -17,7 +17,7 @@ const INITIAL_LAYERS: MapLayer[] = [
     name: 'Precipitation (GPM)',
     visible: false,
     type: 'raster',
-    url: '/api/nasa/gibs/GPM_3IMERGHH_Precipitation_Amount/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png',
+    url: '/api/nasa/gibs/GPM_3IMERGHH_Precipitation_Amount/default/{TIME}/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png',
     description: 'Global Precipitation Measurement (GPM) hourly precipitation amount.'
   },
   {
@@ -25,7 +25,7 @@ const INITIAL_LAYERS: MapLayer[] = [
     name: 'Wildfire Hotspots',
     visible: false,
     type: 'raster',
-    url: '/api/nasa/gibs/MODIS_Terra_Thermal_Anomalies_Day/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png',
+    url: '/api/nasa/gibs/MODIS_Terra_Thermal_Anomalies_Day/default/{TIME}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png',
     description: 'Active fire detections from MODIS Terra satellite.'
   },
   {
@@ -33,7 +33,7 @@ const INITIAL_LAYERS: MapLayer[] = [
     name: 'Vegetation Index (NDVI)',
     visible: false,
     type: 'raster',
-    url: '/api/nasa/gibs/MODIS_Terra_L3_NDVI_Monthly/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png',
+    url: '/api/nasa/gibs/MODIS_Terra_L3_NDVI_Monthly/default/{TIME}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png',
     description: 'Normalized Difference Vegetation Index (NDVI) from MODIS.'
   },
   {

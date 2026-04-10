@@ -26,8 +26,11 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projec
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
   const eventMarkers = useRef<mapboxgl.Marker[]>([]);
+  const animationFrameId = useRef<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const userInteracting = useRef(false);
+  const spinEnabled = useRef(true);
 
   useEffect(() => {
     if (map.current) return; 
@@ -55,6 +58,22 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projec
         antialias: true
       });
 
+      const rotateGlobe = () => {
+        const zoomLevel = map.current?.getZoom() || 0;
+        if (spinEnabled.current && !userInteracting.current && zoomLevel < 5) {
+          let distancePerSecond = 360 / 120; // 120 seconds for a full rotation
+          if (zoomLevel > 3) {
+            distancePerSecond /= (zoomLevel - 2);
+          }
+          const center = map.current?.getCenter();
+          if (center) {
+            center.lng -= distancePerSecond / 60; // 60 fps
+            map.current?.setCenter(center);
+          }
+        }
+        animationFrameId.current = requestAnimationFrame(rotateGlobe);
+      };
+
       map.current.on('load', () => {
         setIsLoaded(true);
         // Enable terrain for better 3D effect like Google Earth
@@ -65,7 +84,20 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projec
           'maxzoom': 14
         });
         map.current?.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
+        
+        // Start rotation
+        rotateGlobe();
       });
+
+      // Pause spinning on interaction
+      map.current.on('mousedown', () => { userInteracting.current = true; });
+      map.current.on('mouseup', () => { userInteracting.current = false; });
+      map.current.on('dragstart', () => { userInteracting.current = true; });
+      map.current.on('dragend', () => { userInteracting.current = false; });
+      map.current.on('zoomstart', () => { userInteracting.current = true; });
+      map.current.on('zoomend', () => { userInteracting.current = false; });
+      map.current.on('touchstart', () => { userInteracting.current = true; });
+      map.current.on('touchend', () => { userInteracting.current = false; });
 
       map.current.on('idle', () => {
         setIsLoaded(true);
@@ -101,6 +133,9 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projec
     }
 
     return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
       map.current?.remove();
       map.current = null;
     };
@@ -211,7 +246,9 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projec
 
         if (layer.type === 'raster') {
           // Use a fixed recent date for raster layers instead of {TIME}
-          const url = layer.url.replace('{TIME}', '2024-06-01');
+          // GIBS 'best' layers usually have data up to 1-2 days ago.
+          // Using a very stable date to avoid 400 errors for missing data.
+          const url = layer.url.replace('{TIME}', '2024-01-01');
 
           currentMap.addSource(sourceId, {
             type: 'raster',

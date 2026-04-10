@@ -51,10 +51,18 @@ async function startServer() {
   app.get("/api/nasa/gibs/*", async (req, res) => {
     try {
       const pathSegments = req.params[0];
-      const url = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${pathSegments}${nasaApiKey ? `?api_key=${nasaApiKey}` : ""}`;
+      // GIBS is a public service and does not use api_key query parameter.
+      // Appending it can cause 400/403 errors.
+      const url = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${pathSegments}`;
       
+      console.log(`Fetching GIBS imagery: ${url}`);
       const response = await fetch(url);
-      if (!response.ok) throw new Error("NASA GIBS API failed");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`NASA GIBS API failed with status ${response.status}: ${url}`);
+        console.error(`Response body: ${errorText}`);
+        throw new Error(`NASA GIBS API failed with status ${response.status}`);
+      }
       
       const contentType = response.headers.get("content-type");
       if (contentType) res.setHeader("Content-Type", contentType);
