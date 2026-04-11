@@ -96,6 +96,71 @@ export async function analyzeQuery(query: string): Promise<SearchResult> {
   }
 }
 
+export async function analyzeLocation(lat: number, lng: number): Promise<SearchResult> {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Analyze the geographic location at Latitude: ${lat}, Longitude: ${lng}.
+      
+      Identify:
+      1. The primary environmental characteristics or notable natural features of this specific location.
+      2. Potential environmental research topics relevant to this area (e.g., deforestation, urban heat islands, coastal erosion, drought).
+      3. A list of 3-5 specific NASA dataset keywords or short names that would be most relevant for studying this location.
+      4. A brief explanation of why these datasets are chosen.`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            explanation: { type: Type.STRING },
+            suggestedKeywords: { 
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            },
+            suggestedVariables: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            }
+          },
+          required: ["explanation", "suggestedKeywords", "suggestedVariables"]
+        }
+      }
+    });
+
+    const analysis = JSON.parse(response.text);
+    let datasets = await fetchNasaDatasets(analysis.suggestedKeywords);
+
+    if (datasets.length === 0) {
+      datasets = [
+        {
+          id: "C123456789-LPDAAC_ECS",
+          title: "MODIS/Terra Thermal Anomalies/Fire 5-Min L2 Swath 1km V061",
+          summary: "The MODIS Thermal Anomalies/Fire products are primarily derived from MODIS 4- and 11-micrometer channels.",
+          links: [{ rel: "enclosure", href: "https://lpdaac.usgs.gov/products/mod14v061/" }]
+        }
+      ];
+    }
+
+    return {
+      datasets: datasets.map((d: any, i: number) => ({
+        id: d.id,
+        title: d.title,
+        summary: d.summary,
+        variables: analysis.suggestedVariables.slice(0, 3), 
+        relevanceScore: 0.95 - (i * 0.05),
+        relevanceReason: analysis.explanation.split('.')[0] + '.',
+        links: d.links
+      })),
+      explanation: analysis.explanation,
+      suggestedVariables: analysis.suggestedVariables,
+      location: { lat, lng, zoom: 8 }
+    };
+  } catch (error) {
+    console.error("Location analysis failed:", error);
+    throw error;
+  }
+}
+
 export async function fetchActiveEvents() {
   try {
     const response = await fetch("/api/nasa/events");

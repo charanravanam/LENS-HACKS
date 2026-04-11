@@ -19,9 +19,10 @@ interface MapProps {
   };
   activeEvents?: any[];
   onMove?: (center: [number, number]) => void;
+  onClick?: (lat: number, lng: number) => void;
 }
 
-export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projection = 'globe', targetLocation, activeEvents = [], onMove }: MapProps) {
+export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projection = 'globe', targetLocation, activeEvents = [], onMove, onClick }: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
@@ -113,6 +114,12 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projec
         if (map.current && onMove) {
           const center = map.current.getCenter();
           onMove([center.lng, center.lat]);
+        }
+      });
+
+      map.current.on('click', (e) => {
+        if (onClick) {
+          onClick(e.lngLat.lat, e.lngLat.lng);
         }
       });
 

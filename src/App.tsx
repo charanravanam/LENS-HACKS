@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import Map from "./components/Map";
-import { analyzeQuery, fetchActiveEvents } from "./services/gemini";
+import { analyzeQuery, fetchActiveEvents, analyzeLocation } from "./services/gemini";
 import { SearchResult, MapLayer } from "./types";
 import { motion, AnimatePresence } from "motion/react";
 import { Globe, Info, X, Check, Activity, MapPin } from "lucide-react";
@@ -96,6 +96,19 @@ export default function App() {
     }
   };
 
+  const handleMapClick = async (lat: number, lng: number) => {
+    setIsLoading(true);
+    setShowWelcome(false);
+    try {
+      const data = await analyzeLocation(lat, lng);
+      setResults(data);
+    } catch (error) {
+      console.error("Location analysis failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const toggleLayer = (id: string) => {
     setLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
   };
@@ -110,6 +123,7 @@ export default function App() {
           targetLocation={results?.location}
           activeEvents={activeEvents}
           onMove={(center) => setMapCenter(center)}
+          onClick={handleMapClick}
         />
       </main>
 
