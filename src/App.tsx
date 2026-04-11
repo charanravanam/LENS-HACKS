@@ -64,6 +64,8 @@ export default function App() {
   const [projection, setProjection] = useState<'globe' | 'mercator'>('globe');
   const [showStreetView, setShowStreetView] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number]>([0, 20]);
+  const [targetLocation, setTargetLocation] = useState<{lat: number, lng: number, zoom?: number} | null>(null);
+  const [isRotating, setIsRotating] = useState(true);
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -76,9 +78,12 @@ export default function App() {
   const handleSearch = async (query: string) => {
     setIsLoading(true);
     setShowWelcome(false);
+    setResults(null); // Clear results to show skeleton
     try {
       const data = await analyzeQuery(query);
       setResults(data);
+      setTargetLocation(data.location);
+      setIsRotating(false); // Stop rotation on search result
 
       // Auto-enable layers for Himalayan/Glacier searches
       if (query.toLowerCase().includes('himalaya') || query.toLowerCase().includes('glacier')) {
@@ -99,9 +104,14 @@ export default function App() {
   const handleMapClick = async (lat: number, lng: number) => {
     setIsLoading(true);
     setShowWelcome(false);
+    setResults(null); // Immediately clear results to show skeleton
+    setTargetLocation({ lat, lng, zoom: 8 }); // Immediate zoom
+    setIsRotating(false); // Immediate stop rotation
+    
     try {
       const data = await analyzeLocation(lat, lng);
       setResults(data);
+      setTargetLocation(data.location); // Refine location if needed
     } catch (error) {
       console.error("Location analysis failed:", error);
     } finally {
@@ -120,10 +130,11 @@ export default function App() {
         <Map 
           activeLayers={layers.filter(l => l.visible)} 
           projection={projection}
-          targetLocation={results?.location}
+          targetLocation={targetLocation}
           activeEvents={activeEvents}
           onMove={(center) => setMapCenter(center)}
           onClick={handleMapClick}
+          rotationEnabled={isRotating}
         />
       </main>
 

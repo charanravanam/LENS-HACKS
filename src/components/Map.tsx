@@ -20,9 +20,20 @@ interface MapProps {
   activeEvents?: any[];
   onMove?: (center: [number, number]) => void;
   onClick?: (lat: number, lng: number) => void;
+  rotationEnabled?: boolean;
 }
 
-export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projection = 'globe', targetLocation, activeEvents = [], onMove, onClick }: MapProps) {
+export default function Map({ 
+  center = [0, 20], 
+  zoom = 1.5, 
+  activeLayers, 
+  projection = 'globe', 
+  targetLocation, 
+  activeEvents = [], 
+  onMove, 
+  onClick,
+  rotationEnabled = true
+}: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
@@ -31,7 +42,11 @@ export default function Map({ center = [0, 20], zoom = 1.5, activeLayers, projec
   const [error, setError] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const userInteracting = useRef(false);
-  const spinEnabled = useRef(true);
+  const spinEnabled = useRef(rotationEnabled);
+
+  useEffect(() => {
+    spinEnabled.current = rotationEnabled;
+  }, [rotationEnabled]);
 
   useEffect(() => {
     if (map.current) return; 

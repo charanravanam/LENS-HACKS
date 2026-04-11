@@ -1,5 +1,5 @@
 import { Search, Globe, Database, BookOpen, Download, ChevronRight, Loader2, Sparkles, Map as MapIcon, Layers, X, ChevronLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "../lib/utils";
@@ -16,6 +16,13 @@ export default function Sidebar({ onSearch, isLoading, results }: SidebarProps) 
   const [query, setQuery] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (isLoading) {
+      setIsExpanded(true);
+      setIsCollapsed(false);
+    }
+  }, [isLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
