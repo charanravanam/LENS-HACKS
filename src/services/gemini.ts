@@ -143,116 +143,263 @@ function getClosestZone(lat: number, lng: number): "himalaya" | "amazon" | "arct
   return "india";
 }
 
-function getResearchQueryFallback(query: string) {
+function getResearchQueryFallback(query: string, latParam?: number, lngParam?: number) {
   const q = query.toLowerCase();
   
+  let lat = latParam;
+  let lng = lngParam;
+
+  if (lat === undefined || lng === undefined) {
+    const coordsMatch = query.match(/Latitude\s+([-+]?\d*\.?\d+),\s+Longitude\s+([-+]?\d*\.?\d+)/i);
+    if (coordsMatch) {
+      lat = parseFloat(coordsMatch[1]);
+      lng = parseFloat(coordsMatch[2]);
+    }
+  }
+
+  const hasCoordinates = lat !== undefined && lng !== undefined;
+  const finalLat = lat !== undefined ? lat : 20.0;
+  const finalLng = lng !== undefined ? lng : 0.0;
+  const isKolkataZone = hasCoordinates ? (Math.abs(finalLat - 22.5726) < 1.0 && Math.abs(finalLng - 88.3639) < 1.0) : false;
+  const zone = hasCoordinates ? getClosestZone(finalLat, finalLng) : null;
+
   let mainDataset = SCIENTIFIC_DATASETS_REGISTRY[3];
   let secondDataset = SCIENTIFIC_DATASETS_REGISTRY[2];
-  let lat = 20.0, lng = 0.0, zoom = 3;
+  let zoom = 3;
   let locName = "Global Observation Zone";
   let answer = "";
   let keywords = ["nasa observation", "satellite imagery", "earth sciences"];
 
-  if (q.includes("glacier") || q.includes("ice") || q.includes("melt") || q.includes("snow") || q.includes("arctic") || q.includes("polar") || q.includes("himalaya") || q.includes("everest")) {
-    mainDataset = SCIENTIFIC_DATASETS_REGISTRY[5];
-    secondDataset = SCIENTIFIC_DATASETS_REGISTRY[4];
-    lat = 27.9881;
-    lng = 86.9250;
-    zoom = 6;
-    locName = "Cryosphere Monitoring Region (Himalayas/NSIDC Polar)";
-    answer = `🏔️ Areas Most Prone to Glacier Melting in India
+  if (isKolkataZone || q.includes("kolkata") || q.includes("ganga") || q.includes("brahmaputra") || q.includes("flood") || q.includes("inundat")) {
+    mainDataset = SCIENTIFIC_DATASETS_REGISTRY[2];
+    secondDataset = SCIENTIFIC_DATASETS_REGISTRY[6];
+    zoom = 8;
+    locName = hasCoordinates 
+      ? `Ganga-Brahmaputra Flood Risk Zone [${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}]` 
+      : "Flood Catchment Vulnerability (Ganga-Brahmaputra Plains & East Coast)";
+    answer = `🌊 Ganga-Brahmaputra Delta & Inundation Assessment
 
 📌 Quick Answer
-The major glacier-melting hotspots in India—spanning **Ladakh**, **Himachal Pradesh**, **Uttarakhand**, **Sikkim**, and **Arunachal Pradesh**—are experiencing accelerating **glacier retreat** due to rising atmospheric temperatures, black carbon emissions, and shifting seasonal precipitation. This rapid melting directly impacts local water resources and significantly increases downstream risks from severe hazards like **Glacial Lake Outburst Floods (GLOFs)**.
+This region sits in one of the most high-discharge delta basins globally, receiving extreme monsoonal precipitation. Dynamic satellite radar monitoring captures intense storm water run-off and frequent overtopping of natural riverbanks across these fertile, highly populated plains.
+
+🗺️ Major Environmental Dimensions
+| Parameter | Regional Indicator | Impact Matrix |
+| :--- | :--- | :--- |
+| **Monsoon Surge** | Intense seasonal precipitation peaks. | Rapid volume rise overloading riverbed capacities. |
+| **Socio-Economic Exposure** | Dense rural-urban community grids. | High flood inundation vulnerability and infrastructure risks. |
+| **Drainage Capacity** | High silt accretion in delta distributaries. | Slow water dissipation leading to prolonged pooling. |
+
+⚠️ Regional Vulnerabilities
+*   **Catchment Inundation**: Excessive precipitation volumes rapidly saturate topsoils, triggering instant surface runoff tracking.
+*   **Vulnerable Populations**: Overlap of high population density (GRUMP indices) with flat-lying terrain multiplies the human impact of each inundation event.
+*   **Riverine Silt-Heavy Shifting**: Dynamic sand bar changes in active channels disrupt regular drainage flows.
+
+🌍 Why It Matters
+*   Managing delta flood discharge cycles is key to ensuring survival and agricultural security for hundreds of millions in India's major river basins.
+
+✅ Key Takeaway
+Integrating high-frequency precipitation sensors (GPM) with socio-demographic maps (GRUMP) provides precise early assessments of regional flood exposure and impact zones.`;
+    keywords = ["flood inundation modeling", "catchment runoff intensity", "drainage discharge threshold", "precipitation anomaly index"];
+  } else if (zone === "himalaya" || q.includes("glacier") || q.includes("ice") || q.includes("melt") || q.includes("snow") || q.includes("everest") || q.includes("himalaya")) {
+    mainDataset = SCIENTIFIC_DATASETS_REGISTRY[5];
+    secondDataset = SCIENTIFIC_DATASETS_REGISTRY[3];
+    zoom = 8;
+    locName = hasCoordinates 
+      ? `Himalayan Cryosphere Glacier Zone [${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}]` 
+      : "Cryosphere Monitoring Region (Himalayas)";
+    answer = `🏔️ High-Altitude Himalayan Cryosphere Assessment
+
+📌 Quick Answer
+The Himalayan cryosphere region is highly vulnerable to rapid atmospheric warming. Active glacier inventory modeling (RGI) combined with 8-day MODIS Land Surface Temperatures tracks accelerating glacier retreat and expansion of supraglacial water lakes.
 
 🗺️ Major Glacier-Melting Regions
-| Region | Why Vulnerable | Key Concerns |
+| Region | Thermal Signature (LST) | Glacier Terminus State |
 | :--- | :--- | :--- |
-| **Ladakh** | Hyper-arid cold desert with marginal winter snowfall. Low albedo due to high wind-blown **black carbon** dust accumulation. | Severe **water-resource changes** leading to acute seasonal irrigation shortages for alpine agriculture depend on meltwater. |
-| **Himachal Pradesh** | Sits at the meeting zone of both winter westerlies and summer monsoons; experiences rapid, elevation-dependent warming trends. | High retreating rate of major valley glacier systems like **Chandra-Bhaga** and **Beas**, threatening downstream hydrologic balance. |
-| **Uttarakhand** | Fragile high-elevation geological terrain with steep slopes, home to the massive **Gangotri** glacier, which is retreating at 15-20 meters annually. | Moraine destabilization posing severe risk of sudden landslides and catastrophic **Glacial Lake Outburst Floods (GLOFs)**. |
-| **Sikkim** | High-humidity maritime Eastern Himalayan zone where glaciers are extremely sensitive to rising warming condensation layers. | Rapid water accumulation in unstable proglacial lakes such as **South Lhonak Lake**, leading to high breach risks. |
-| **Arunachal Pradesh** | Warm easternmost Himalayan ranges seeing a critical transition from winter snow to liquid rain, causing instant ablation (melting). | High slope instability, dangerous flash floods, and sudden, volatile alterations to transboundary river systems. |
+| **Khumbu & Everest** | Rising daytime surface temperature anomalies. | Systematic horizontal retreat and snout fragmentation. |
+| **Ladakh Range** | Increasing sub-freezing daily maximums. | Dry ablation and severe spring melt water depletion. |
+| **Uttarakhand Glaciers** | Severe elevation-dependent warming trends. | Moraine collapse risks and proglacial lake pressure. |
 
-⚠️ Major Risks
-*   **Glacier Retreat**: More than **85%** of monitored glaciers in these Indian states exhibit a continuous recessional trend, leading to a permanent reduction in ancestral ice volume.
-*   **Water-Resource Changes**: Himalayan rivers are witnessing temporary surge volumes in spring runoff, which will inevitably transition into critical long-term seasonal dry-period streamflow deficits.
-*   **Glacial Lake Outburst Floods (GLOFs)**: As glacier snouts retreat quickly, they leave behind unstable soil and rock debris damming massive meltwater pools. Sudden structural breaches can trigger high-velocity downvalley flash floods.
+⚠️ Major Risks & Signals
+*   **Glacier Retreat**: Glacier boundaries (RGI) show sustained surface area reduction under elevated thermal patterns.
+*   **Thermal Radiation Accrual**: Bare glacier ice absorbs solar radiation rapidly when winter pack snow melt occurs early.
+*   **GLOF Flash Hazards**: Supraglacial lake formation can trigger catastrophic downstream Glacial Lake Outburst Floods.
 
 🌍 Why It Matters
-*   The Himalayan cryosphere functions as the water tower of India, feeding essential perennial rivers such as the **Indus**, **Ganga**, and **Brahmaputra**. Protecting these glaciers is vital to safeguard regional food security, local communities, clean drinking water systems, and major hydropower investments.
+*   The Himalayan glacier networks serve as the primary hydrologic towers feeding key rivers like the Ganga, Indus, and Brahmaputra, supporting over a billion people.
 
 ✅ Key Takeaway
-Establishing robust satellite monitoring and real-time early warning networks for GLOF-prone lakes is critical to mitigate disaster risks across India's high-altitude states.`;
+Coupling glacier outline records with spatial temperature tracking is vital to modeling glacier mass balance and predicting downstream risk thresholds.`;
     keywords = ["glacier recession", "terminus displacement", "albedo feedback", "mass balance depletion"];
-  } else if (q.includes("flood") || q.includes("inundat")) {
-    mainDataset = SCIENTIFIC_DATASETS_REGISTRY[2];
+  } else if (zone === "arctic" || q.includes("polar") || q.includes("arctic") || q.includes("greenland")) {
+    mainDataset = SCIENTIFIC_DATASETS_REGISTRY[4];
     secondDataset = SCIENTIFIC_DATASETS_REGISTRY[3];
-    lat = 22.5726;
-    lng = 88.3639;
     zoom = 5;
-    locName = "Flood Catchment Vulnerability (Ganga-Brahmaputra Plains & East Coast)";
-    answer = `🌊 Areas Most Prone to Floods in India
+    locName = hasCoordinates 
+      ? `High-Latitude Polar Ice Zone [${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}]` 
+      : "Greenland Sea Polar Ice Pack Zone";
+    answer = `❄️ Polar Sea Ice & Thermal Amplification Assessment
 
 📌 Quick Answer
-India's major flood-prone zones span nearly **40 million hectares**, heavily concentrated along the **Ganga-Brahmaputra Basin**, low-lying delta coastlines of **Odisha and Andhra Pradesh**, the high-precipitation monsoonal belts of **Kerala**, and dense **urban metropolitan centers** experiencing rapid drainage overflow.
+The high-altitude and high-latitude polar ice sheets and sea boundaries are undergoing unprecedented shifts driven by Polar Amplification. Satellite microwave sensors capture rapid multiyear sea ice concentration reductions corresponding directly to elevated Land Surface Temperature trends.
 
-🗺️ Major Flood-Prone Regions
-| Region | Why Vulnerable | Key Concerns |
+🗺️ Sea Ice Indicator Matrix
+| Region | Ice Concentration Index | Climate Forcing Factor |
 | :--- | :--- | :--- |
-| **Brahmaputra Valley (Assam)** | Extreme monsoonal intensity, heavy river siltation, and volatile seismic riverbeds. | Overturning of major wetlands, catastrophic seasonal flooding displacing millions and impacting Kaziranga / Majuli. |
-| **Indo-Gangetic Basins (Bihar & UP)** | Active, flat-lying river channels prone to sudden, massive course deviations (**Kosi, Gandak**). | Severe riverbank erosion, widespread crop failures, and prolonged seasonal waterlogging. |
-| **Eastern Coast Deltas (Odisha / AP)** | High susceptibility to severe tropical cyclones and storm surges along wide, low-gradient tidal plains. | Catastrophic coastal inundation, destructive wave run-up, and sudden salinity intrusion across agricultural aquifers. |
-| **Western Ghats / Malabar (Kerala)** | Steep mountainous catchments encountering intense local cloudbursts and high-velocity runoff. | Flash-flooding, landslide-coupled river overflows, and emergency reservoir spillway discharge stresses. |
-| **Major Urban Metros (Mumbai, Chennai)** | Heavy concrete pacing with inadequate or blocked natural drainage and outdated storm infrastructure. | Sudden, high-intensity urban flash surges paralyzing commercial hubs within hours of short-duration cloudbursts. |
+| **Polar Drift Zones** | Drastic sea ice extent contractions. | Ocean thermal feedback and reduced albedo cycles. |
+| **Marginal Ice Zones** | Early seasonal fracturing events. | Atmospheric warming and storm wave stress. |
+| **Coastal Greenland** | Continuous glacier discharge and melt. | Multiyear maximum surface temperatures. |
 
-⚠️ Major Risks
-*   **Riverine Overflow**: Continuous heavy monsoon rains exceeding the volumetric discharge capacities of regional river networks.
-*   **Urban Drainage Chokes**: Highly impervious concrete profiles failing to dissipate flash rain rates of over 50mm/hour.
-*   **Dynamic course changes**: Silt-choked river basins overtopping local embankments and making rapid shifts.
+⚠️ Key Polar Anomalies
+*   **Albedo Loss**: Replacing highly reflective ice packs with dark open water triggers runaway solar absorption cycles.
+*   **Freshwater Runoff surges**: Increasing ice-shelf melt alters salinity dynamics in local ocean circulation systems.
+*   **Multiyear Pack Fragility**: Reduction in thick perennial sea ice leaves younger first-year ice highly prone to rapid summer breakups.
 
 🌍 Why It Matters
-*   Integrating watershed-scale management models paired with high-resolution real-time satellite warning networks is critical to safeguarding vulnerable populations across India's flood basins.
+*   Polar ice coverage regulates the Earth's global radiative budget. Disruptions here propagate extreme weather shifts to lower latitudes.
 
 ✅ Key Takeaway
-Developing integrated watershed-scale management models paired with high-resolution real-time satellite warning networks is critical to safeguarding vulnerable populations across India's flood basins.`;
-    keywords = ["flood inundation modeling", "catchment runoff intensity", "drainage discharge threshold", "precipitation anomaly index"];
-  } else if (q.includes("fire") || q.includes("wildfire") || q.includes("burn") || q.includes("forest") || q.includes("smoke") || q.includes("tree") || q.includes("amazon") || q.includes("brazil")) {
-    mainDataset = SCIENTIFIC_DATASETS_REGISTRY[0];
-    secondDataset = SCIENTIFIC_DATASETS_REGISTRY[1];
-    lat = -3.4653;
-    lng = -62.2159;
-    zoom = 5;
-    locName = "Amazon Basin Thermal Inversion / Fire-Risk Hotspots";
-    answer = `### Wildfire Hotspots & Forest Canopy Degradation Report
+Continuous monitoring of sea ice concentration alongside land/water surface temperatures is essential to modeling polar climate stability and global sea level rises.`;
+    keywords = ["sea ice concentration", "polar albedo feedback", "multiyear pack ice retreat", "amplified warming"];
+  } else if (zone === "amazon" || q.includes("amazon") || q.includes("brazil") || q.includes("rainforest") || q.includes("deforest") || q.includes("canopy") || q.includes("wildfire") || q.includes("fire")) {
+    mainDataset = SCIENTIFIC_DATASETS_REGISTRY[1];
+    secondDataset = SCIENTIFIC_DATASETS_REGISTRY[0];
+    zoom = 7;
+    locName = hasCoordinates 
+      ? `Amazon Basin Canopy Stress Area [${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}]` 
+      : "Amazon Basin High-Risk Forest Zone";
+    answer = `🌳 Amazon Basin Canopy Health and Deforestation Report
 
-Your request has been mapped to NASA's active fire and forest health observation archives:
-1. **Thermal Radiative Power (FRP)**: High-resolution diurnal sensing detects rapid expansion of thermal anomalies along agricultural margins and rainforest boundaries.
-2. **Canopy Stress & Fuel Aridity**: Combining the Vegetation Index (NDVI) with ground-surface temperature tracks extreme soil dry-out, turning dense forests into high-risk fuel beds.
-3. **Plume Propagation**: Carbon monoxide and short-wave aerosol indices illustrate smoke plumes feeding back into local heat traps, shifting weather cycles and worsening environmental risk levels.`;
-    keywords = ["fire radiative power", "canopy degradation", "thermal anomaly tracking", "combustion emissions"];
-  } else if (q.includes("rain") || q.includes("precip") || q.includes("water") || q.includes("drought") || q.includes("monsoon") || q.includes("wet") || q.includes("india")) {
+📌 Quick Answer
+Tropical rainforest canopies are experiencing severe agricultural displacement and selective logging pressure. Mapping NASA MODIS Vegetation Indices (NDVI/EVI) with active fire thermal anomalies reveals a tight coupling between forest fragmentation, canopy drying, and active burn plumes.
+
+🗺️ Canopy Stress & Fire Metrics
+| Parameter | Forest Canopy Health (NDVI) | Active Fire Anomalies (MOD14) |
+| :--- | :--- | :--- |
+| **Logging Borders** | Severe localized vegetation index declines. | Dense clustering of agricultural understory ignitions. |
+| **Basin Interior** | Pristine vegetation health, high EVI values. | Extremely sparse or zero active thermal signatures. |
+| **Dry Corridor** | Moderate canopy water shortage stresses. | Highly volatile wildfire risks during late drier months. |
+
+⚠️ Ecological Risks
+*   **Forest Degradation**: Canopy fragmentation reduces internal relative humidity, causing rapid local drying.
+*   **Thermodynamic Feedbacks**: Loss of dense tree density restricts evapotranspiration, reducing regional rainfall signals.
+*   **Combustion Carbon Output**: Large biomass fires emit carbon monoxide and aerosols, complicating regional microclimates.
+
+🌍 Why It Matters
+*   The Amazon rainforest functions as one of the world's primary terrestrial carbon sinks and biodiversity reservoirs. Degradation risks reaching an irreversible savanna tipping point.
+
+✅ Key Takeaway
+Overlaying 16-day vegetation indices with active thermal sensors gives field operators the immediate warnings needed to intercept clearing and illegal fires.`;
+    keywords = ["canopy degradation", "ndvi stress tracking", "thermal anomalies", "biomass combustion"];
+  } else if (zone === "india" || q.includes("india") || q.includes("subcontinent") || q.includes("monsoon") || q.includes("drought") || q.includes("water stress")) {
     mainDataset = SCIENTIFIC_DATASETS_REGISTRY[2];
     secondDataset = SCIENTIFIC_DATASETS_REGISTRY[3];
-    lat = 19.0760;
-    lng = 72.8777;
-    zoom = 5;
-    locName = "Monsoonal Hydrological Cycle Monitoring (Central India)";
-    answer = `### Global Hydrological Cycles & Water Stress Indicators
+    zoom = 6;
+    locName = hasCoordinates 
+      ? `Indian Subcontinent Hydrological Study [${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}]` 
+      : "Indian Hydrological & Thermal Assessment Zone";
+    answer = `🌦️ Subcontinent Precipitation & Aridity Assessment
 
-Your query regarding **precipitation anomalies, rainfall, and drought stress indices** maps to passive microwave spatial missions:
-1. **Hydro-climatic Fluctuations**: Multi-satellitE retrievals (such as GPM IMERG) confirm intense rainfall spikes followed by prolonged dry periods, indicating high-amplitude monsoon shifts.
-2. **Precipitation Moisture Balances**: High soil-water anomalies paired with Land Surface Temperature (LST) provide direct estimates of evapotranspiration rates and agricultural drought severity.
-3. **Aquifer Vulnerability**: Drastic changes in surface-water boundaries show immediate vulnerabilities in regional water storage infrastructures and local irrigation frameworks.`;
+📌 Quick Answer
+The Indian subcontinent experiences extreme seasonal water variations governed by the Southwest Monsoon. Satellite microwave sensors (GPM IMERG) paired with Land Surface Temperature track delayed monsoonal precipitation onset, intense localized cloudbursts, and severe agricultural heat stress.
+
+🗺️ Hydrologic & Air-Land Indicators
+| Index / Metric | Observed Pattern | Environmental Implication |
+| :--- | :--- | :--- |
+| **Precipitation Intensity** | Violent high-amplitude rainfall spikes. | Immediate flash run-off, flooding risks, and less groundwater capture. |
+| **Land Surface Temperature** | Pre-monsoon thermal spikes (>45°C). | High soil moisture loss and agricultural stress. |
+| **Vegetation Health** | Seasonal NDVI delays in arid zones. | Deficiencies in crop germination and forage yields. |
+
+⚠️ Subcontinental Challenges
+*   **Volatile Monsoons**: Disrupted monsoon schedules lead to acute early-stage irrigation deficits.
+*   **Groundwater Depletion**: Extreme evapotranspiration rates driven by high LST trends force heavy sub-surface aquifer pumping.
+*   **Urban Heat Islands**: Concrete-heavy metros record nighttime surface temperatures up to 8°C higher than adjacent rural areas.
+
+🌍 Why It Matters
+*   Securing subcontinental water supplies is vital for the food requirements and economic stability of more than 1.4 billion people.
+
+✅ Key Takeaway
+Merging high-resolution spatial rainfall with thermal land indices allows watershed managers to precisely map areas experiencing aquifer depletion and drought hazards.`;
     keywords = ["gpm precipitation intensity", "evapotranspiration", "hydrological deficiency", "monsoon variability"];
   } else {
-    answer = `### Land Surface Temperature & Thermal Amplification Synthesis
+    if (finalLat > 50 || finalLat < -50) {
+      mainDataset = SCIENTIFIC_DATASETS_REGISTRY[4];
+      secondDataset = SCIENTIFIC_DATASETS_REGISTRY[3];
+      zoom = 4;
+      locName = `High-Latitude Study Area [${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}]`;
+      answer = `❄️ High-Latitude Environmental Change Assessment
 
-Your research query has been validated against active NASA polar and geostationary missions:
-1. **Radiative Budget Imbalances**: Land Surface Temperature (LST) monitoring detects a multi-decade upward trajectory in average thermal signatures.
-2. **Micro-Climate Feedback**: Albedo changes driven by rapid land cover transitions create strong localized feedback cycles, accelerating warming across both urban areas and standard agricultural soils.
-3. **Sensor Cross-Calibration**: Multi-sensor validation confirms consistent temperature anomalies, aligning perfectly with other global climate indicators.`;
-    keywords = ["land surface temperature", "radiative budget", "thermal anomalies", "climate teleconnections"];
+📌 Quick Answer
+High-latitude regions are highly sensitive to surface warming. Passive microwave systems track ice concentrations and seasonal melting timelines, which provide crucial markers for polar warming trends.
+
+🗺️ Key Cold-Zone Parameters
+| Indicator | Observation Method | Climatic Imbalance Metric |
+| :--- | :--- | :--- |
+| **Ice Coverage** | High-frequency microwave radiometry. | Rates of multiyear perennial sea-ice loss. |
+| **Surface Temperature** | Thermal infrared spectrum arrays. | Extreme warming anomalies disrupting cryo-stability. |
+
+⚠️ Physical Impact Factors
+*   **Albedo Transition**: Thicker ice sheets melt to reveal darker water or tundra, accelerating heat capture.
+*   **Ecosystem Disruption**: Polar ecosystems depend directly on structural ice sheets and stable temperatures.
+
+🌍 Why It Matters
+*   High-latitude imbalances represent key indicators of global energy budget shifts, regulating global wind and current streams.
+
+✅ Key Takeaway
+Integrating temperature anomalies with ice cover data provides critical clues for predicting the long-term future of the global cryosphere.`;
+      keywords = ["cryosphere loss", "albedo feedback", "high-latitude warming", "thermohaline influence"];
+    } else if (finalLat > -15 && finalLat < 15) {
+      mainDataset = SCIENTIFIC_DATASETS_REGISTRY[1];
+      secondDataset = SCIENTIFIC_DATASETS_REGISTRY[0];
+      zoom = 6;
+      locName = `Tropical Belt Observation Zone [${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}]`;
+      answer = `🌳 Tropical Belt Environmental Change Report
+
+📌 Quick Answer
+Tropical forested areas face continuous pressure from agricultural encroachment and seasonal wildfires. Satellite indices monitor density changes on forest margins.
+
+🗺️ Tropical Biosphere Signals
+| Signal | Observing Satellite Platform | Core Indicator |
+| :--- | :--- | :--- |
+| **Canopy Density** | MODIS 16-day Vegetation Index (NDVI). | Greenness index degradation along logging borders. |
+| **Heat Signatures** | MODIS active thermal fire pixels.| Localized heat anomalies from clearing operations. |
+
+⚠️ Environmental Vulnerabilities
+*   **Canopy Stress**: Shorter forest edges dry out quickly, creating fuel corridors highly vulnerable to understory fires.
+*   **Evapotranspiration Drops**: Reduced canopy density restricts local water vapor cycling, dragging down rain frequencies.
+
+🌍 Why It Matters
+*   Maintaining contiguous tropical tree cover is essential to preventing carbon feedback loops and stabilizing global weather.
+
+✅ Key Takeaway
+Overlaying multi-spectral greenness indices with daily thermal fire alerts is the best method for real-time forest protection.`;
+      keywords = ["canopy stress", "ndvi tracking", "deforestation footprint", "thermal fire detection"];
+    } else {
+      mainDataset = SCIENTIFIC_DATASETS_REGISTRY[3];
+      secondDataset = SCIENTIFIC_DATASETS_REGISTRY[2];
+      zoom = 7;
+      locName = `Geospatial Assessment Zone [${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}]`;
+      answer = `☀️ Mid-Latitude Geospatial & Climate Assessment
+
+📌 Quick Answer
+This region sits in a highly productive mid-latitude zone. Satellite environmental networks gather land surface temperatures alongside spatial daily precipitation values to model key hydrological variables and regional warming.
+
+🗺️ Mid-Latitude Parameter Grid
+| Parameter | Satellite Product | Environmental Insight |
+| :--- | :--- | :--- |
+| **Land Temp (LST)** | MOD11A2 Land Temperature 8-Day. | Tracks soil warmth cycles and urban thermal islands. |
+| **Rainfall Intake** | GPM IMERG Half-Hourly Precipitation.| Maps monsoonal cloudburst frequency and dry days. |
+
+⚠️ Environmental Imbalances
+*   **Localized Thermal Stress**: Soil warmth increases alter seed germination and trigger urban heat islands.
+*   **Moisture Variations**: Volatile intervals between rain occurrences cause extreme seasonal soil dry-outs.
+
+🌍 Why It Matters
+*   Modeling mid-latitude climate cycles protects regional water distribution systems, farming outputs, and municipal resilience.
+
+✅ Key Takeaway
+Combining daily rainfall indexes with thermal infrared maps is the most efficient way to track drought hazards and water utilization.`;
+      keywords = ["land surface temperature", "evapotranspiration anomalies", "hydrological budget", "spatial precipitation"];
+    }
   }
 
   const matchedDatasets = [
@@ -266,7 +413,7 @@ Your research query has been validated against active NASA polar and geostationa
       timeScore: 0.90,
       scientificScore: 0.96,
       totalConfidence: 95,
-      justification: `Directly matches queries related to ${mainDataset.category} with premium spatial resolution of ${mainDataset.spatial}.`
+      justification: `Directly matches queries/locations related to ${mainDataset.category} with premium spatial resolution of ${mainDataset.spatial}.`
     },
     {
       id: secondDataset.id,
@@ -287,8 +434,8 @@ Your research query has been validated against active NASA polar and geostationa
     suggestedVariables: keywords,
     location: {
       name: locName,
-      lat: lat,
-      lng: lng,
+      lat: finalLat,
+      lng: finalLng,
       zoom: zoom
     },
     datasets: matchedDatasets.map(d => ({
@@ -326,13 +473,14 @@ if (geminiApiKey) {
   }
 }
 
-export async function analyzeQuery(query: string, fast = false): Promise<SearchResult> {
+export async function analyzeQuery(query: string, fast = false, lat?: number, lng?: number): Promise<SearchResult> {
   if (fast || !ai) {
-    return getResearchQueryFallback(query);
+    return getResearchQueryFallback(query, lat, lng);
   }
   try {
     const prompt = `You are the lead scientist for the NASA Earth & Space Research Copilot.
 Analyze research request: "${query}"
+${lat !== undefined && lng !== undefined ? `Target Geolocation Coordinate Context: Latitude ${lat.toFixed(4)}, Longitude ${lng.toFixed(4)}` : ''}
 
 Your task:
 1. Formulate a comprehensive scientific response / answer explaining the environmental phenomenon, physics or mechanisms. Be specific, structured, and insightful like an expert scientist (NASA level).
@@ -362,14 +510,14 @@ Your task:
      ✅ Key Takeaway
      (1–2 sentence conclusion)
 2. Look at the curated datasets listed below and match the MOST relevant ones.
-3. For each matched dataset, you MUST calculate and provide 4 specific relevance scores (0 to 1 scale):
+3. For each matched dataset, you MUST calculate and provide 4 specific relevance scores (0 to 1 scale) geographically and scientifically matching the Target Geolocation if defined:
    - Geographic relevance
    - Topic relevance
    - Time relevance
    - Scientific relevance
    These must reflect the actual connection between the target query/coordinates and the dataset capabilities.
 4. Calculate a total confidence score (0 to 100%) and write a clear, tailored 1-2 sentence relevance justification.
-5. Extract or estimate accurate coordinates (lat, lng, and zoom) for a geographic area most relevant to the query.
+5. Extract or estimate accurate coordinates (lat, lng, and zoom) for a geographic area most relevant to the query. If a Target Geolocation is specified, your response location Lat and Lng MUST match it exactly.
 
 DATASETS REGISTRY:
 ${JSON.stringify(SCIENTIFIC_DATASETS_REGISTRY, null, 2)}
@@ -445,12 +593,12 @@ Provide your response in JSON format matching this schema strictly.`;
     };
   } catch (err) {
     console.warn("Client-side direct analyzeQuery failed, utilizing local indicators:", err);
-    return getResearchQueryFallback(query);
+    return getResearchQueryFallback(query, lat, lng);
   }
 }
 
 export async function analyzeLocation(lat: number, lng: number, fast = false): Promise<SearchResult> {
-  return analyzeQuery(`Geospatial assessment for coordinates Latitude ${lat.toFixed(4)}, Longitude ${lng.toFixed(4)}`, fast);
+  return analyzeQuery(`Geospatial assessment for coordinates Latitude ${lat.toFixed(4)}, Longitude ${lng.toFixed(4)}`, fast, lat, lng);
 }
 
 export async function fetchLocationIntelligence(lat: number, lng: number, fast = false): Promise<LocationIntelligence> {
