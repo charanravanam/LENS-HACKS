@@ -373,10 +373,10 @@ Provide your response in JSON format matching this schema strictly.`;
 }
 
 export async function processLocationAnalysis(lat: number, lng: number, fast = false) {
-  if (fast || !process.env.GEMINI_API_KEY) {
-    throw new Error("Fast fallback requested");
-  }
   try {
+    if (fast || !process.env.GEMINI_API_KEY) {
+      throw new Error("Fast fallback requested");
+    }
     const prompt = `Perform a comprehensive satellite environmental assessment for the coordinates: Latitude: ${lat}, Longitude: ${lng}.
 
 You must provide detailed location intelligence metrics:
@@ -757,10 +757,10 @@ As the **Signal Correlation & Teleconnections Agent**, I have modeled the multi-
 }
 
 export async function processChangeDetection(lat: number, lng: number, fast = false) {
-  if (fast || !process.env.GEMINI_API_KEY) {
-    throw new Error("Fast fallback requested");
-  }
   try {
+    if (fast || !process.env.GEMINI_API_KEY) {
+      throw new Error("Fast fallback requested");
+    }
     const prompt = `Analyze historical change detection for coordinates (Lat: ${lat}, Lng: ${lng}) from 2010 to 2026.
     
 We are interested in mapping physical landscape changes over multiple years:

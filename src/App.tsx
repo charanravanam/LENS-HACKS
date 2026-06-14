@@ -203,17 +203,19 @@ export default function App() {
       setLocationIntel(intelResult);
       setChangeDetection(changeResult);
 
-      // Auto toggle layers based on active risks
-      const maxRisk = Object.entries(intelResult.riskIndicators).reduce(
-        (a, b) => b[1] > a[1] ? b : a
-      );
-      setLayers(prev => prev.map(l => {
-        if (maxRisk[0] === "wildfire") return { ...l, visible: l.id === "wildfire" };
-        if (maxRisk[0] === "deforestation") return { ...l, visible: l.id === "vegetation" };
-        if (maxRisk[0] === "waterStress") return { ...l, visible: l.id === "precipitation" };
-        if (maxRisk[0] === "warming") return { ...l, visible: l.id === "temp-anomalies" };
-        return l;
-      }));
+      // Auto toggle layers based on active risks safely
+      if (intelResult && intelResult.riskIndicators) {
+        const maxRisk = Object.entries(intelResult.riskIndicators).reduce(
+          (a, b) => b[1] > a[1] ? b : a
+        );
+        setLayers(prev => prev.map(l => {
+          if (maxRisk[0] === "wildfire") return { ...l, visible: l.id === "wildfire" };
+          if (maxRisk[0] === "deforestation") return { ...l, visible: l.id === "vegetation" };
+          if (maxRisk[0] === "waterStress") return { ...l, visible: l.id === "precipitation" };
+          if (maxRisk[0] === "warming") return { ...l, visible: l.id === "temp-anomalies" };
+          return l;
+        }));
+      }
     } catch (error) {
       console.error("Location analysis failed:", error);
     } finally {
