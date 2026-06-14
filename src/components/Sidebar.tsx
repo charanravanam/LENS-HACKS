@@ -24,7 +24,7 @@ import ReactMarkdown from "react-markdown";
 import { cn } from "../lib/utils";
 import { Dataset, SearchResult, LocationIntelligence, ChangeDetectionResult } from "../types";
 import { generateNotebook } from "../lib/notebookGenerator";
-import { fetchAgentQuery } from "../services/gemini";
+import { fetchAgentQuery, analyzeQuery } from "../services/gemini";
 import ResearchLoading from "./ResearchLoading";
 
 const getDatasetWebpageUrl = (datasetId: string) => {
@@ -255,11 +255,9 @@ export default function Sidebar({ onSearch, isLoading, results, isMinimized, onT
     setChatThinkingStep(0);
 
     // Call API immediately
-    const apiPromise = fetch("/api/research/query", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: userMsg })
-    }).then(res => res.json()).catch(err => {
+    const apiPromise = analyzeQuery(userMsg).then(res => ({
+      scientificAnswer: res.explanation
+    })).catch(err => {
       console.error(err);
       return { scientificAnswer: "Sensor network timeout. Failed to connect to core modeling server. Please retry." };
     });
