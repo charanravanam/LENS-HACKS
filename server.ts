@@ -9,8 +9,36 @@ import {
   processChangeDetection 
 } from "./src/services/gemini_server.ts";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+function getCjsFilename() {
+  try {
+    // @ts-ignore
+    return __filename;
+  } catch {
+    return "";
+  }
+}
+
+function getCjsDirname() {
+  try {
+    // @ts-ignore
+    return __dirname;
+  } catch {
+    return "";
+  }
+}
+
+const cleanFilename = typeof import.meta !== "undefined" && import.meta.url
+  ? fileURLToPath(import.meta.url)
+  : getCjsFilename();
+
+const cleanDirname = typeof import.meta !== "undefined" && import.meta.url
+  ? path.dirname(cleanFilename)
+  : getCjsDirname();
+
+// @ts-ignore
+const __filename = cleanFilename;
+// @ts-ignore
+const __dirname = cleanDirname;
 
 async function startServer() {
   const app = express();
