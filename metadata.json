@@ -1,5 +1,6 @@
 {
   "name": "EarthLens AI",
-  "description": "Intelligent Earth Science Discovery Platform. Transform natural language queries into curated NASA dataset pipelines and visual previews.",
-  "requestFramePermissions": []
+  "description": "AI-powered Earth & Space Research Copilot. Explore, analyze, detect anomalies and generate research-grade reports using NASA datasets and advanced models.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
